@@ -1,0 +1,70 @@
+version: "3"
+
+networks:
+  glp-stack:
+
+services:
+  loki:
+    container_name: loki
+    image: grafana/loki:2.9.4
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - glp-stack
+
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:2.9.4
+    volumes:
+      - ${GLP_ROS_LOG_PATH}:/var/log
+      - ${GLP_ROS_LOG_PATH}/latest:/var/log/latest
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - glp-stack
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/log-dashboard.json
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - glp-stack
+# Example entrypoint script to initialize Grafana with the Loki datasource:
+#    entrypoint:
+#      - sh
+#      - -euc
+#      - |
+#        mkdir -p /etc/grafana/provisioning/datasources
+#        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+#        apiVersion: 1
+#        datasources:
+#        - name: Loki
+#          type: loki
+#          access: proxy
+#          orgId: 1
+#          url: http://loki:3100
+#          basicAuth: false
+#          isDefault: true
+#          editable: false
+#        EOF
+#        /run.sh
+
+volumes:
+  grafana-data:

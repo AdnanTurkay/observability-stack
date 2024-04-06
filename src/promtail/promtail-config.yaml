@@ -1,0 +1,83 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: 'http://loki:3100/loki/api/v1/push'
+
+scrape_configs:
+  - job_name: ros
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: ros
+          __path__: /var/log/*.log
+
+    pipeline_stages:
+      - match:
+          selector: '{job="ros"}'
+          stages:
+            - regex:
+                source: filename
+                expression: '/var/log/(?P<node>[A-Za-z_]+)_\d+.*?\.log'
+            - labels:
+                node:
+      - multiline:
+          firstline: '^\[[A-Za-z\.]+\]\[[A-Z]+\]'
+          max_wait_time: 2s
+      - regex:
+          expression: '\[(?P<type>[A-Za-z\.]+)\]\[(?P<severity>[A-Z]+)\]'
+#          expression: '\[(?P<type>[A-Za-z\.]+)\]\[(?P<severity>[A-Z]+)\]\s+(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})'
+#      - timestamp:
+#          source: timestamp
+#          format: '2006-01-02 15:04:05,000'
+      - labels:
+          type:
+          severity:
+
+  - job_name: rosmaster
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: rosmaster
+          __path__: /var/log/latest/master.log
+
+    pipeline_stages:
+      - multiline:
+          firstline: '^\[[A-Za-z\.]+\]\[[A-Z]+\]'
+          max_wait_time: 2s
+      - regex:
+          expression: '\[(?P<type>[A-Za-z\.]+)\]\[(?P<severity>[A-Z]+)\]'
+#          expression: '\[(?P<type>[A-Za-z\.]+)\]\[(?P<severity>[A-Z]+)\]\s+(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})'
+#      - timestamp:
+#          source: timestamp
+#          format: '2006-01-02 15:04:05,000'
+      - labels:
+          type:
+          severity:
+
+  - job_name: rosout
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: rosout
+          __path__: /var/log/latest/rosout.log
+
+    pipeline_stages:
+      - multiline:
+          firstline: '^\d+\.\d+\s(DEBUG|INFO|WARN|ERROR|FATAL)'
+          max_wait_time: 2s
+      - regex:
+          expression: '\d+\.\d+\s+(?P<severity>[A-Z]+)\s+\/(?P<node>[A-Za-z_]+)_\d+.*?\s+\[(?P<source>[^\]]+)\]\s+\[topics:\s(?P<topics>[^\]]+)\]\s+(?P<data>.+)'
+      - labels:
+          severity:
+          node:
+          source:
+          topics:
+          data:
