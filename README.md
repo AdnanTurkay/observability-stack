@@ -58,12 +58,17 @@ git clone https://github.com/AdnanTurkay/observability-stack.git
 cd observability-stack
 ```
 
-3. Set up and deploy the stack:
+3. Ensure the setup script is executable:
+```sh
+chmod +x ./setup.sh
+```
+
+4. Set up and deploy the stack:
 ```sh
 sudo ./setup.sh
 ```
 
-4. Enter the full path to the ROS log directory when prompted. For example (note the specific syntax):
+5. Enter the full path to the ROS log directory when prompted. For example (note the specific syntax):
 ```sh
 /home/USER/.ros/log
 ```
