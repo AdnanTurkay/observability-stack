@@ -23,7 +23,7 @@ scrape_configs:
           stages:
             - regex:
                 source: filename
-                expression: '/var/log/(?P<node>[A-Za-z_]+)_\d+.*?\.log'
+                expression: '/var/log/(?P<node>[A-Za-z_]+)(?:_\d+)?_.*?\.log'
             - labels:
                 node:
       - multiline:
@@ -71,7 +71,7 @@ scrape_configs:
 
     pipeline_stages:
       - multiline:
-          firstline: '^\d+\.\d+\s(DEBUG|INFO|WARN|ERROR|FATAL)'
+          firstline: '^\d+\.\d+\s+(DEBUG|INFO|WARN|ERROR|FATAL)'
           max_wait_time: 2s
       - regex:
           expression: '\d+\.\d+\s+(?P<severity>[A-Z]+)\s+\/(?P<node>[A-Za-z_]+)_\d+.*?\s+\[(?P<source>[^\]]+)\]\s+\[topics:\s(?P<topics>[^\]]+)\]\s+(?P<data>.+)'
